@@ -29,8 +29,8 @@ class TM(TemporalMemory):
           if column is inactive and has matching distal dendrite segments
             call punishPredictedColumn
     """
-    print 'Activate Cells'
-    print gridCell
+    #print 'Activate Cells'
+    #print gridCell
     prevActiveCells = self.activeCells
     prevWinnerCells = self.winnerCells
     #prevWinnerCells = gridCell
@@ -208,7 +208,6 @@ tm0.activateDendrites(learn=True)
 print 'Active Cells: ' + repr(tm0.activeCells)
 print 'Winner Cells: ' + repr(tm0.winnerCells)
 print 'Predictive Cells: ' + repr(tm0.getPredictiveCells())
-print 'Data: ' + repr(tm0.connections.)
 
 print ''
 tm0.activateCells(sorted(Din0),gridCell=x_cell[1])
