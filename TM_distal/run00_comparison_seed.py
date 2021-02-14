@@ -74,8 +74,8 @@ class LVF(object):
                 seed
                 ):
 
-        self.xEncoder = ScalarEncoder(5, minX, maxX, n=75, forced=True)
-        self.yEncoder = ScalarEncoder(5, minY, maxY, n=75, forced=True)
+        self.xEncoder = ScalarEncoder(5, minX, 10*maxX, n=75, forced=True)
+        self.yEncoder = ScalarEncoder(5, minY, 10*maxY, n=75, forced=True)
         self.externalSize = self.xEncoder.getWidth()**2
         self.externalOnBits = self.xEncoder.w**2
 
@@ -138,18 +138,28 @@ def load(DIR):
     nColumns = D[0,:].size
 
     # Odom input
+    noise = 0.05
     odom = np.loadtxt(DIR + '/seq_multi_loop_noise05_al5_gt.txt', dtype='f', delimiter=',')
     x = odom[:,0]
     y = odom[:,1]
-    x = (x + 0.0075*np.random.randn(1, x.size))[0]
-    y = (y + 0.0075*np.random.randn(1, y.size))[0]
+    x = (x + noise*np.random.randn(1, x.size))[0]
+    y = (y + noise*np.random.randn(1, y.size))[0]
 
-    return D, numberImages, nColumns, x, y
+    # *******************************************
+    # Create ground truth
+    # *******************************************
+    GT_data = np.loadtxt(DIR + '/seq_multi_loop_noNoise_gt.txt', dtype='i', delimiter=',',skiprows=1)
+    GT = np.zeros((numberImages,numberImages), dtype=int)
+    for i in range(GT.shape[0]):
+        for j in range(i,GT.shape[1]):
+            GT[i,j] = (np.any(GT_data[i,:] != GT_data[j,:])==False)
+
+    return D, numberImages, nColumns, x, y, GT
 
 def main(seed):
 
-    DIR = "./sim_data"
-    D, numberImages, nColumns, x, y = load(DIR)
+    #DIR = "./sim_data"
+    #D, numberImages, nColumns, x, y = load(DIR)
 
     # Network LVF
     lvf = LVF(minX=np.min(x),
@@ -177,7 +187,7 @@ def main(seed):
     params.kMin = 1
 
     mcn = MCN('MCN',params)
-    '''
+    
     # *******************************************
     # Experiment with Apical Tiebreak Pair Memory
     # *******************************************
@@ -201,7 +211,7 @@ def main(seed):
 
     elapsed = time.time() - t
     print( "Elapsed time: %f seconds\n" %elapsed)
-
+    
     # *******************************************
     # Experiment with HTM
     # *******************************************
@@ -225,7 +235,7 @@ def main(seed):
 
     elapsed = time.time() - t
     print( "Elapsed time: %f seconds\n" %elapsed)
-    '''
+    
     # *******************************************
     # Experiment with MCN
     # *******************************************
@@ -252,11 +262,11 @@ def main(seed):
     # *******************************************
     # Create ground truth
     # *******************************************
-    GT_data = np.loadtxt(DIR + '/seq_multi_loop_noNoise_gt.txt', dtype='i', delimiter=',',skiprows=1)
-    GT = np.zeros((numberImages,numberImages), dtype=int)
-    for i in range(GT.shape[0]):
-        for j in range(i,GT.shape[1]):
-            GT[i,j] = (np.any(GT_data[i,:] != GT_data[j,:])==False)
+    #GT_data = np.loadtxt(DIR + '/seq_multi_loop_noNoise_gt.txt', dtype='i', delimiter=',',skiprows=1)
+    #GT = np.zeros((numberImages,numberImages), dtype=int)
+    #for i in range(GT.shape[0]):
+    #    for j in range(i,GT.shape[1]):
+    #        GT[i,j] = (np.any(GT_data[i,:] != GT_data[j,:])==False)
     
     # *******************************************
     # Results
@@ -264,23 +274,23 @@ def main(seed):
     print ('Results')
     #fig, ax = plt.subplots()
 
-    #S0 = evaluateSimilarity(D)
-    #P, R = createPR(S0,GT)
+    S0 = evaluateSimilarity(D)
+    P0, R0 = createPR(S0,GT)
     #ax.plot(R, P, label='InputSDR: (avgP=%f)' %np.trapz(P,R))
 
-    #S1 = evaluateSimilarity(M)
-    #P, R = createPR(S1,GT)
+    S1 = evaluateSimilarity(M)
+    P1, R1 = createPR(S1,GT)
     #ax.plot(R, P, label='LVF (avgP=%f)' %np.trapz(P,R))
 
-    #S2 = evaluateSimilarity(T)
-    #P, R = createPR(S2,GT)
+    S2 = evaluateSimilarity(T)
+    P2, R2 = createPR(S2,GT)
     #ax.plot(R, P, label='HTM (avgP=%f)' %np.trapz(P,R))
 
     S3 = evaluateSimilarity(MC)
-    P, R = createPR(S3,GT)
+    P3, R3 = createPR(S3,GT)
     #ax.plot(R, P, label='MCN (avgP=%f)' %np.trapz(P,R))
 
-    return P, R
+    return P0, R0, P1, R1, P2, R2, P3, R3
 
     #ax.legend()
     #ax.grid(True)
@@ -290,28 +300,93 @@ def main(seed):
 
 if __name__ == "__main__":
 
+    # load Data
+    DIR = "./sim_data"
+    D, numberImages, nColumns, x, y, GT = load(DIR)
 
-    nExp = 10
+    nExp = 5
 
-    Pm = np.zeros((nExp, 101))
-    Rm = np.zeros((nExp, 101))
-    
-    fig, ax = plt.subplots()
+    Pm0 = np.zeros((nExp, 101))
+    Rm0 = np.zeros((nExp, 101))
+    avgP0 = np.zeros(nExp)
+
+    Pm1 = np.zeros((nExp, 101))
+    Rm1 = np.zeros((nExp, 101))
+    avgP1 = np.zeros(nExp)
+
+    Pm2 = np.zeros((nExp, 101))
+    Rm2 = np.zeros((nExp, 101))
+    avgP2 = np.zeros(nExp)
+
+    Pm3 = np.zeros((nExp, 101))
+    Rm3 = np.zeros((nExp, 101))
+    avgP3 = np.zeros(nExp)
 
     for i in range(nExp):
-        Pm[i,:], Rm[i,:] = main(seed = i + 120)
-        ax.plot(Rm[i,:], Pm[i,:], alpha=0.3, label='MCN (avgP=%f)' %np.trapz(Pm[i,:],Rm[i,:]))
+        Pm0[i,:], Rm0[i,:], Pm1[i,:], Rm1[i,:], Pm2[i,:], Rm2[i,:], Pm3[i,:], Rm3[i,:] = main(seed = i + 42)
+        avgP0[i] = np.trapz(Pm0[i,:],Rm0[i,:])
+        avgP1[i] = np.trapz(Pm1[i,:],Rm1[i,:])
+        avgP2[i] = np.trapz(Pm2[i,:],Rm2[i,:])
+        avgP3[i] = np.trapz(Pm3[i,:],Rm3[i,:])
+        #print( "AVG: %f\n" %avgP1[i])
+        #ax.plot(Rm[i,:], Pm[i,:], alpha=0.3, label='MCN (avgP=%f)' %np.trapz(Pm[i,:],Rm[i,:]))
 
-    meanP = np.mean(Pm, axis=0)
-    meanR = np.mean(Rm, axis=0)
+    #meanP0 = np.mean(Pm0, axis=0)
+    #meanR0 = np.mean(Rm0, axis=0)
+    avgP0_mean = np.mean(avgP0)
 
-    plt.plot(meanR, meanP, lw=2,color='red')
+    #meanP1 = np.mean(Pm1, axis=0)
+    #meanR1 = np.mean(Rm1, axis=0)
+    avgP1_mean = np.mean(avgP1)
 
-    stdP = np.std(Pm, axis=0)
-    plt.fill_between(meanR, meanP + stdP, meanP - stdP, alpha=0.3, linewidth=0, color='grey')
+    #meanP2 = np.mean(Pm2, axis=0)
+    #meanR2 = np.mean(Rm2, axis=0)
+    avgP2_mean = np.mean(avgP2)
 
-    ax.legend()
-    ax.grid(True)
-    plt.xlabel("Recall")
-    plt.ylabel("Precision")
+    #meanP3 = np.mean(Pm3, axis=0)
+    #meanR3 = np.mean(Rm3, axis=0)
+    avgP3_mean = np.mean(avgP3)   
+
+    # Calculate the standard deviation
+    avgP0_std = np.std(avgP0)
+    avgP1_std = np.std(avgP1)
+    avgP2_std = np.std(avgP3)
+    avgP3_std = np.std(avgP3)
+
+    # Create lists for the plot
+    alg = ['InputSDR', 'HTM-DC', 'HTM-CLA', 'MCN']
+    x_pos = np.arange(len(alg))
+    CTEs = [avgP0_mean, avgP1_mean, avgP2_mean, avgP3_mean]
+    error = [avgP0_std, avgP1_std, avgP2_std, avgP3_std]
+
+    # Build the plot
+    fig, (ax1, ax2) = plt.subplots(1, 2)
+    ax1.plot(x, y)
+    ax1.grid(True)
+    ax1.axis('equal')
+    ax1.set_title('Odometry position')
+    ax1.set_xlabel("x(m)")
+    ax1.set_ylabel("y(m)")
+
+    ax2.bar(x_pos, CTEs, yerr=error, align='center', alpha=0.5, ecolor='black', capsize=10)
+    ax2.set_ylabel('Average')
+    ax2.set_xticks(x_pos)
+    ax2.set_xticklabels(alg)
+    ax2.set_title('Average')
+    ax2.yaxis.grid(True)
+
+    # Save the figure and show
+    plt.tight_layout()
+    #plt.savefig('bar_plot_with_error_bars.png')
     plt.show()
+
+    #plt.plot(meanR, meanP, lw=2,color='red')
+
+    #stdP = np.std(Pm, axis=0)
+    #plt.fill_between(meanR, meanP + stdP, meanP - stdP, alpha=0.3, linewidth=0, color='grey')
+
+    #ax.legend()
+    #ax.grid(True)
+    #plt.xlabel("Recall")
+    #plt.ylabel("Precision")
+    #plt.show()

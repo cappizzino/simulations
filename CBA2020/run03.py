@@ -71,7 +71,7 @@ def main():
     features = []
     labels = []
 
-    DIR = "/home/cappizzino/Documentos/doutorado/simulation/paper_01/dataset"
+    DIR = "/home/cappizzino/Documentos/doutorado/dataset"
 
     path_im = [os.path.join(DIR,sp) for sp in [
         'fall/',
@@ -85,7 +85,7 @@ def main():
     # simul 1 = 2 and 3
     # simul 2 = 1 and 0
     # simul 3 = 0 and 3
-    reference_season = 1
+    reference_season = 2
     input_season = 3
 
     # Extract Features

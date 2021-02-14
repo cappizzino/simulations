@@ -176,7 +176,7 @@ def main():
     for i in range(numberImages):
         for _ in range(1):
             activeColumnIndices = np.nonzero(D1_slsbh[i,:])[0]
-            print activeColumnIndices
+            #print activeColumnIndices
             time.sleep(2)
             tm.compute(activeColumnIndices, learn=True)
             #tm.compute(D1_htm[i], learn=True)
